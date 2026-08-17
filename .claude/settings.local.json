@@ -4,7 +4,8 @@
       "PowerShell(go version *)",
       "Bash(go get *)",
       "Bash(Remove-Item -Force \"internal\\\\database\\\\database.go\",\"internal\\\\database\\\\database_test.go\",\"migrations\\\\embed.go\",\"migrations\\\\000001_init_schema.up.sql\",\"migrations\\\\000001_init_schema.down.sql\")",
-      "Bash(Remove-Item -Force -Recurse \"internal\\\\database\")"
+      "Bash(Remove-Item -Force -Recurse \"internal\\\\database\")",
+      "PowerShell(Get-ChildItem -Recurse \"C:\\\\Users\\\\Public\\\\Desktop\\\\next-playground\\\\agnos-assessment\" -Exclude \"agnos-backend\" | Where-Object { $_.Name -ne \"agnos-backend\" } | Select-Object FullName)"
     ]
   }
 }
