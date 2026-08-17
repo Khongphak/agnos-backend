@@ -1,6 +1,7 @@
 package service_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -11,28 +12,20 @@ type mockHealthRepo struct {
 	pingErr error
 }
 
-func (m *mockHealthRepo) Ping() error {
+func (m *mockHealthRepo) Ping(_ context.Context) error {
 	return m.pingErr
 }
 
 func TestHealthService_Check_DBConnected(t *testing.T) {
 	svc := service.NewHealthService(&mockHealthRepo{})
-	status, db := svc.Check()
-	if status != "ok" {
-		t.Errorf("expected status %q, got %q", "ok", status)
-	}
-	if db != "connected" {
-		t.Errorf("expected database %q, got %q", "connected", db)
+	if err := svc.Check(context.Background()); err != nil {
+		t.Errorf("expected nil error, got %v", err)
 	}
 }
 
 func TestHealthService_Check_DBDisconnected(t *testing.T) {
 	svc := service.NewHealthService(&mockHealthRepo{pingErr: errors.New("connection refused")})
-	status, db := svc.Check()
-	if status != "ok" {
-		t.Errorf("expected status %q, got %q", "ok", status)
-	}
-	if db != "disconnected" {
-		t.Errorf("expected database %q, got %q", "disconnected", db)
+	if err := svc.Check(context.Background()); err == nil {
+		t.Error("expected non-nil error, got nil")
 	}
 }

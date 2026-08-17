@@ -1,14 +1,13 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
 
 	"github.com/agnos-assessment/agnos-backend/internal/config"
+	"github.com/agnos-assessment/agnos-backend/internal/database"
 	"github.com/agnos-assessment/agnos-backend/internal/handler"
 	"github.com/agnos-assessment/agnos-backend/internal/repository"
 	"github.com/agnos-assessment/agnos-backend/internal/service"
@@ -17,14 +16,11 @@ import (
 func main() {
 	cfg := config.Load()
 
-	db, err := sql.Open("postgres", cfg.Database.DSN())
+	db, err := database.Connect(cfg.Database, database.DefaultRetryConfig)
 	if err != nil {
-		log.Fatalf("failed to open database connection: %v", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
-
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
 
 	r := gin.Default()
 

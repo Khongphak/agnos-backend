@@ -1,9 +1,16 @@
 package service
 
-import "github.com/agnos-assessment/agnos-backend/internal/repository"
+import (
+	"context"
+	"time"
+
+	"github.com/agnos-assessment/agnos-backend/internal/repository"
+)
+
+const healthPingTimeout = 2 * time.Second
 
 type HealthService interface {
-	Check() (status string, database string)
+	Check(ctx context.Context) error
 }
 
 type healthService struct {
@@ -14,9 +21,8 @@ func NewHealthService(repo repository.HealthRepository) HealthService {
 	return &healthService{repo: repo}
 }
 
-func (s *healthService) Check() (string, string) {
-	if err := s.repo.Ping(); err != nil {
-		return "ok", "disconnected"
-	}
-	return "ok", "connected"
+func (s *healthService) Check(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, healthPingTimeout)
+	defer cancel()
+	return s.repo.Ping(ctx)
 }

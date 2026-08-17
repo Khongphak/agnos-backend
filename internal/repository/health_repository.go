@@ -1,9 +1,12 @@
 package repository
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
 type HealthRepository interface {
-	Ping() error
+	Ping(ctx context.Context) error
 }
 
 type healthRepository struct {
@@ -14,6 +17,6 @@ func NewHealthRepository(db *sql.DB) HealthRepository {
 	return &healthRepository{db: db}
 }
 
-func (r *healthRepository) Ping() error {
-	return r.db.Ping()
+func (r *healthRepository) Ping(ctx context.Context) error {
+	return r.db.PingContext(ctx)
 }

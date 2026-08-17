@@ -18,9 +18,9 @@ func NewHealthHandler(svc service.HealthService) *HealthHandler {
 }
 
 func (h *HealthHandler) GetHealth(c *gin.Context) {
-	status, db := h.svc.Check()
-	c.JSON(http.StatusOK, response.HealthResponse{
-		Status:   status,
-		Database: db,
-	})
+	if err := h.svc.Check(c.Request.Context()); err != nil {
+		c.JSON(http.StatusServiceUnavailable, response.NewError("DB_UNAVAILABLE", "database unavailable"))
+		return
+	}
+	c.JSON(http.StatusOK, response.HealthResponse{Status: "ok", Database: "connected"})
 }
