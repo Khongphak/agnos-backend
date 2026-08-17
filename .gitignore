@@ -1,0 +1,28 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+server
+
+# Test output
+*.test
+*.out
+coverage.html
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Vendor (uncomment if using vendor mode)
+# vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
