@@ -22,6 +22,10 @@ func main() {
 	}
 	defer db.Close()
 
+	if err := database.RunMigrations(cfg.Database.PostgresURL(), "migrations"); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
+
 	r := gin.Default()
 
 	healthRepo := repository.NewHealthRepository(db)
