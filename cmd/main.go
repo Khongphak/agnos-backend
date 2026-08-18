@@ -28,11 +28,18 @@ func main() {
 
 	r := gin.Default()
 
+	// Health
 	healthRepo := repository.NewHealthRepository(db)
 	healthSvc := service.NewHealthService(healthRepo)
 	healthHandler := handler.NewHealthHandler(healthSvc)
-
 	r.GET("/health", healthHandler.GetHealth)
+
+	// Staff auth
+	staffRepo := repository.NewStaffRepository(db)
+	staffSvc := service.NewStaffService(staffRepo, cfg.JWT.Secret)
+	staffHandler := handler.NewStaffHandler(staffSvc)
+	r.POST("/staff/create", staffHandler.Create)
+	r.POST("/staff/login", staffHandler.Login)
 
 	addr := fmt.Sprintf(":%s", cfg.Server.Port)
 	log.Printf("server listening on %s", addr)
