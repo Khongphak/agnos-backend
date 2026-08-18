@@ -18,21 +18,35 @@ func NewStaffHandler(svc service.StaffService) *StaffHandler {
 	return &StaffHandler{svc: svc}
 }
 
-type createStaffRequest struct {
-	Username     string `json:"username"      binding:"required"`
-	Password     string `json:"password"      binding:"required"`
-	HospitalCode string `json:"hospital_code" binding:"required"`
-	Role         string `json:"role"`
+// CreateStaffInput is the request body for POST /staff/create.
+type CreateStaffInput struct {
+	Username     string `json:"username"      binding:"required" example:"nurse01"`
+	Password     string `json:"password"      binding:"required" example:"P@ssw0rd123"`
+	HospitalCode string `json:"hospital_code" binding:"required" example:"BKK001"`
+	Role         string `json:"role"                             example:"staff"    enums:"staff,admin"`
 }
 
-type loginRequest struct {
-	Username     string `json:"username"      binding:"required"`
-	Password     string `json:"password"      binding:"required"`
-	HospitalCode string `json:"hospital_code" binding:"required"`
+// LoginInput is the request body for POST /staff/login.
+type LoginInput struct {
+	Username     string `json:"username"      binding:"required" example:"nurse01"`
+	Password     string `json:"password"      binding:"required" example:"P@ssw0rd123"`
+	HospitalCode string `json:"hospital_code" binding:"required" example:"BKK001"`
 }
 
+// Create godoc
+// @Summary      Create staff account
+// @Description  Registers a new staff member linked to a hospital
+// @Tags         staff
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateStaffInput            true  "Staff registration data"
+// @Success      201   {object}  response.StaffCreatedResponse
+// @Failure      400   {object}  response.ErrorResponse
+// @Failure      404   {object}  response.ErrorResponse
+// @Failure      409   {object}  response.ErrorResponse
+// @Router       /staff/create [post]
 func (h *StaffHandler) Create(c *gin.Context) {
-	var req createStaffRequest
+	var req CreateStaffInput
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.NewError("INVALID_INPUT", err.Error()))
 		return
@@ -64,16 +78,28 @@ func (h *StaffHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"id":            result.ID,
-		"username":      result.Username,
-		"hospital_code": result.HospitalCode,
-		"role":          result.Role,
+	c.JSON(http.StatusCreated, response.StaffCreatedResponse{
+		ID:           result.ID,
+		Username:     result.Username,
+		HospitalCode: result.HospitalCode,
+		Role:         result.Role,
 	})
 }
 
+// Login godoc
+// @Summary      Staff login
+// @Description  Authenticates a staff member and returns JWT access + refresh tokens
+// @Tags         staff
+// @Accept       json
+// @Produce      json
+// @Param        body  body      LoginInput              true  "Login credentials"
+// @Success      200   {object}  response.TokenResponse
+// @Failure      400   {object}  response.ErrorResponse
+// @Failure      401   {object}  response.ErrorResponse
+// @Failure      403   {object}  response.ErrorResponse
+// @Router       /staff/login [post]
 func (h *StaffHandler) Login(c *gin.Context) {
-	var req loginRequest
+	var req LoginInput
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.NewError("INVALID_INPUT", err.Error()))
 		return
@@ -96,9 +122,9 @@ func (h *StaffHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token":  result.AccessToken,
-		"refresh_token": result.RefreshToken,
-		"expires_in":    result.ExpiresIn,
+	c.JSON(http.StatusOK, response.TokenResponse{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		ExpiresIn:    result.ExpiresIn,
 	})
 }
