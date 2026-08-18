@@ -1,0 +1,187 @@
+basePath: /api
+definitions:
+  handler.CreateStaffInput:
+    properties:
+      hospital_code:
+        example: BKK001
+        type: string
+      password:
+        example: P@ssw0rd123
+        type: string
+      role:
+        enum:
+        - staff
+        - admin
+        example: staff
+        type: string
+      username:
+        example: nurse01
+        type: string
+    required:
+    - hospital_code
+    - password
+    - username
+    type: object
+  handler.LoginInput:
+    properties:
+      hospital_code:
+        example: BKK001
+        type: string
+      password:
+        example: P@ssw0rd123
+        type: string
+      username:
+        example: nurse01
+        type: string
+    required:
+    - hospital_code
+    - password
+    - username
+    type: object
+  response.ErrorDetail:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/response.ErrorDetail'
+    type: object
+  response.HealthResponse:
+    properties:
+      database:
+        type: string
+      status:
+        type: string
+    type: object
+  response.StaffCreatedResponse:
+    properties:
+      hospital_code:
+        example: BKK001
+        type: string
+      id:
+        example: 1
+        type: integer
+      role:
+        example: staff
+        type: string
+      username:
+        example: nurse01
+        type: string
+    type: object
+  response.TokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: a1b2c3d4e5f6...
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Hospital staff authentication and patient management API
+  title: Agnos Hospital Middleware API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Returns server and database status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Health check
+      tags:
+      - health
+  /staff/create:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new staff member linked to a hospital
+      parameters:
+      - description: Staff registration data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateStaffInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.StaffCreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create staff account
+      tags:
+      - staff
+  /staff/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a staff member and returns JWT access + refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Staff login
+      tags:
+      - staff
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and your JWT access token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
