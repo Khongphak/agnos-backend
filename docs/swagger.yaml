@@ -57,6 +57,39 @@ definitions:
       status:
         type: string
     type: object
+  response.HospitalAPatientResponse:
+    properties:
+      date_of_birth:
+        example: "1990-01-15"
+        type: string
+      email:
+        example: somchai@example.com
+        type: string
+      first_name_en:
+        example: Somchai
+        type: string
+      first_name_th:
+        example: สมชาย
+        type: string
+      gender:
+        example: male
+        type: string
+      last_name_en:
+        example: Jaidee
+        type: string
+      last_name_th:
+        example: ใจดี
+        type: string
+      national_id:
+        example: "1234567890123"
+        type: string
+      passport_id:
+        example: AB123456
+        type: string
+      phone_number:
+        example: "0812345678"
+        type: string
+    type: object
   response.PatientListResponse:
     properties:
       patients:
@@ -154,6 +187,40 @@ paths:
       summary: Health check
       tags:
       - health
+  /hospital-a/patient/search/{id}:
+    get:
+      description: Proxies a patient lookup to Hospital A upstream API using a Thai
+        national ID or passport ID. No auth required. Fields absent from the upstream
+        response are null.
+      parameters:
+      - description: Thai national ID or passport ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.HospitalAPatientResponse'
+        "400":
+          description: INVALID_REQUEST — id is empty
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: NOT_FOUND — patient not found in Hospital A
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "502":
+          description: UPSTREAM_ERROR — timeout, connection error, or unexpected upstream
+            status
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Search patient by ID via Hospital A
+      tags:
+      - hospital-a
   /patient/search:
     get:
       description: Returns patients registered at the authenticated staff's hospital.
