@@ -41,6 +41,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/hospital-a/patient/search/{id}": {
+            "get": {
+                "description": "Proxies a patient lookup to Hospital A upstream API using a Thai national ID or passport ID. No auth required. Fields absent from the upstream response are null.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "hospital-a"
+                ],
+                "summary": "Search patient by ID via Hospital A",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Thai national ID or passport ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.HospitalAPatientResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "INVALID_REQUEST — id is empty",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "NOT_FOUND — patient not found in Hospital A",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "UPSTREAM_ERROR — timeout, connection error, or unexpected upstream status",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/patient/search": {
             "get": {
                 "security": [
@@ -307,6 +354,51 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "response.HospitalAPatientResponse": {
+            "type": "object",
+            "properties": {
+                "date_of_birth": {
+                    "type": "string",
+                    "example": "1990-01-15"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "somchai@example.com"
+                },
+                "first_name_en": {
+                    "type": "string",
+                    "example": "Somchai"
+                },
+                "first_name_th": {
+                    "type": "string",
+                    "example": "สมชาย"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
+                },
+                "last_name_en": {
+                    "type": "string",
+                    "example": "Jaidee"
+                },
+                "last_name_th": {
+                    "type": "string",
+                    "example": "ใจดี"
+                },
+                "national_id": {
+                    "type": "string",
+                    "example": "1234567890123"
+                },
+                "passport_id": {
+                    "type": "string",
+                    "example": "AB123456"
+                },
+                "phone_number": {
+                    "type": "string",
+                    "example": "0812345678"
                 }
             }
         },

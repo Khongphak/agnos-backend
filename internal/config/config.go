@@ -7,9 +7,14 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
+	Server    ServerConfig
+	Database  DatabaseConfig
+	JWT       JWTConfig
+	HospitalA HospitalAConfig
+}
+
+type HospitalAConfig struct {
+	BaseURL string
 }
 
 type JWTConfig struct {
@@ -64,6 +69,9 @@ func Load() *Config {
 		},
 		JWT: JWTConfig{
 			Secret: getEnv("JWT_SECRET", ""),
+		},
+		HospitalA: HospitalAConfig{
+			BaseURL: getEnv("HOSPITAL_A_BASE_URL", "https://hospital-a.api.co.th"),
 		},
 	}
 }

@@ -66,6 +66,11 @@ func main() {
 	authed := r.Group("/", middleware.AuthRequired(cfg.JWT.Secret))
 	authed.GET("/patient/search", patientHandler.Search)
 
+	// Hospital A proxy (no auth)
+	hospitalASvc := service.NewHospitalAService(cfg.HospitalA.BaseURL)
+	hospitalAHandler := handler.NewHospitalAHandler(hospitalASvc)
+	r.GET("/hospital-a/patient/search/:id", hospitalAHandler.SearchPatient)
+
 	// WebSocket hub
 	hub := ws.NewHub()
 	go hub.Run()
