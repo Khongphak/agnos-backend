@@ -38,6 +38,87 @@
                 }
             }
         },
+        "/patient/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns patients registered at the authenticated staff's hospital. All query params are optional; omitting all returns every patient for that hospital.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "patient"
+                ],
+                "summary": "Search patients",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Thai national ID (exact match)",
+                        "name": "national_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Passport ID (exact match)",
+                        "name": "passport_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "First name partial match (ILIKE)",
+                        "name": "first_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Last name partial match (ILIKE)",
+                        "name": "last_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date of birth exact match (YYYY-MM-DD)",
+                        "name": "dob",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Phone number partial match (ILIKE)",
+                        "name": "phone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email partial match (ILIKE)",
+                        "name": "email",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.PatientListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/staff/create": {
             "post": {
                 "description": "Registers a new staff member linked to a hospital",
@@ -223,6 +304,70 @@
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "response.PatientListResponse": {
+            "type": "object",
+            "properties": {
+                "patients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.PatientResult"
+                    }
+                }
+            }
+        },
+        "response.PatientResult": {
+            "type": "object",
+            "properties": {
+                "date_of_birth": {
+                    "type": "string",
+                    "example": "1990-01-15"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "somchai@example.com"
+                },
+                "first_name_en": {
+                    "type": "string",
+                    "example": "Somchai"
+                },
+                "first_name_th": {
+                    "type": "string",
+                    "example": "สมชาย"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "last_name_en": {
+                    "type": "string",
+                    "example": "Jaidee"
+                },
+                "last_name_th": {
+                    "type": "string",
+                    "example": "ใจดี"
+                },
+                "national_id": {
+                    "type": "string",
+                    "example": "1234567890123"
+                },
+                "passport_id": {
+                    "type": "string",
+                    "example": "AB123456"
+                },
+                "patient_hn": {
+                    "type": "string",
+                    "example": "HN001"
+                },
+                "phone_number": {
+                    "type": "string",
+                    "example": "0812345678"
                 }
             }
         },

@@ -8,7 +8,9 @@
       "PowerShell(Get-ChildItem -Recurse \"C:\\\\Users\\\\Public\\\\Desktop\\\\next-playground\\\\agnos-assessment\" -Exclude \"agnos-backend\" | Where-Object { $_.Name -ne \"agnos-backend\" } | Select-Object FullName)",
       "Bash(go mod *)",
       "Bash(go test *)",
-      "Bash(go build *)"
+      "Bash(go build *)",
+      "Bash(swag init *)",
+      "Bash(docker compose *)"
     ]
   }
 }
