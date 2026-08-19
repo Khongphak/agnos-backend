@@ -53,6 +53,20 @@ type PatientListResponse struct {
 	Patients []PatientResult `json:"patients"`
 }
 
+// HospitalAPatientResponse is the payload for GET /hospital-a/patient/search/{id}.
+type HospitalAPatientResponse struct {
+	NationalID  *string `json:"national_id"   example:"1234567890123"`
+	PassportID  *string `json:"passport_id"   example:"AB123456"`
+	FirstNameTH string  `json:"first_name_th" example:"สมชาย"`
+	LastNameTH  string  `json:"last_name_th"  example:"ใจดี"`
+	FirstNameEN *string `json:"first_name_en" example:"Somchai"`
+	LastNameEN  *string `json:"last_name_en"  example:"Jaidee"`
+	DateOfBirth string  `json:"date_of_birth" example:"1990-01-15"`
+	Gender      string  `json:"gender"        example:"male"`
+	PhoneNumber *string `json:"phone_number"  example:"0812345678"`
+	Email       *string `json:"email"         example:"somchai@example.com"`
+}
+
 // NewError builds a standard error response.
 func NewError(code, message string) ErrorResponse {
 	return ErrorResponse{
