@@ -157,6 +157,8 @@ All error responses follow a consistent envelope:
 | DB_NAME       | agnos       | yes             | |
 | DB_SSLMODE    | disable     | yes             | Set to `require` in prod |
 | JWT_SECRET    | (empty)     | **yes**         | HS256 signing key; generate with `openssl rand -hex 32` |
+| HOSPITAL_A_BASE_URL | `https://hospital-a.api.co.th` | no | Base URL for Hospital A upstream API; override in tests/staging |
+| ALLOWED_ORIGINS | `http://localhost:3000` | **yes** | Comma-separated list of allowed CORS origins (e.g. `https://app.vercel.app`) |
 
 Access tokens expire after **15 minutes**. Refresh tokens expire after **30 days**.
 

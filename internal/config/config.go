@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -22,7 +23,8 @@ type JWTConfig struct {
 }
 
 type ServerConfig struct {
-	Port string
+	Port           string
+	AllowedOrigins []string
 }
 
 type DatabaseConfig struct {
@@ -57,7 +59,8 @@ func (d DatabaseConfig) PostgresURL() string {
 func Load() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port: getEnv("SERVER_PORT", "8080"),
+			Port:           getEnv("SERVER_PORT", "8080"),
+			AllowedOrigins: strings.Split(getEnv("ALLOWED_ORIGINS", "http://localhost:3000"), ","),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
