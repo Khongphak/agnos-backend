@@ -11,6 +11,7 @@ services:
       DB_NAME: ${DB_NAME:-agnos}
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
+      HOSPITAL_A_BASE_URL: ${HOSPITAL_A_BASE_URL:-http://host.docker.internal:9001}
     depends_on:
       postgres:
         condition: service_healthy
