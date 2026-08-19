@@ -22,8 +22,10 @@ import (
 	"github.com/agnos-assessment/agnos-backend/internal/config"
 	"github.com/agnos-assessment/agnos-backend/internal/database"
 	"github.com/agnos-assessment/agnos-backend/internal/handler"
+	"github.com/agnos-assessment/agnos-backend/internal/middleware"
 	"github.com/agnos-assessment/agnos-backend/internal/repository"
 	"github.com/agnos-assessment/agnos-backend/internal/service"
+	"github.com/agnos-assessment/agnos-backend/internal/ws"
 )
 
 func main() {
@@ -56,6 +58,20 @@ func main() {
 	staffHandler := handler.NewStaffHandler(staffSvc)
 	r.POST("/staff/create", staffHandler.Create)
 	r.POST("/staff/login", staffHandler.Login)
+
+	// Patient search (auth required)
+	patientRepo := repository.NewPatientRepository(db)
+	patientSvc := service.NewPatientService(patientRepo)
+	patientHandler := handler.NewPatientHandler(patientSvc)
+	authed := r.Group("/", middleware.AuthRequired(cfg.JWT.Secret))
+	authed.GET("/patient/search", patientHandler.Search)
+
+	// WebSocket hub
+	hub := ws.NewHub()
+	go hub.Run()
+	wsHandler := handler.NewWSHandler(hub, patientSvc, cfg.JWT.Secret)
+	r.GET("/ws/patient", wsHandler.HandlePatient)
+	r.GET("/ws/staff", wsHandler.HandleStaff)
 
 	addr := fmt.Sprintf(":%s", cfg.Server.Port)
 	log.Printf("server listening on %s", addr)
