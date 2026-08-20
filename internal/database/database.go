@@ -17,10 +17,11 @@ type RetryConfig struct {
 	RetryInterval time.Duration
 }
 
-// DefaultRetryConfig is suitable for container startup (up to ~20 s total wait).
+// DefaultRetryConfig gives Postgres up to ~90 s to become reachable (covers
+// cold-start on platforms that suspend the database between requests).
 var DefaultRetryConfig = RetryConfig{
-	MaxAttempts:   10,
-	RetryInterval: 2 * time.Second,
+	MaxAttempts:   30,
+	RetryInterval: 3 * time.Second,
 }
 
 // RetryPing calls ping repeatedly until it succeeds or MaxAttempts is exhausted.
