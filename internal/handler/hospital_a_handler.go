@@ -21,16 +21,17 @@ func NewHospitalAHandler(svc service.HospitalAService) *HospitalAHandler {
 }
 
 // SearchPatient godoc
-// @Summary      Search patient by ID via Hospital A
-// @Description  Proxies a patient lookup to Hospital A upstream API using a Thai national ID or passport ID. No auth required. Fields absent from the upstream response are null.
-// @Tags         hospital-a
-// @Produce      json
-// @Param        id  path  string  true  "Thai national ID or passport ID"
-// @Success      200  {object}  response.HospitalAPatientResponse
-// @Failure      400  {object}  response.ErrorResponse  "INVALID_REQUEST — id is empty"
-// @Failure      404  {object}  response.ErrorResponse  "NOT_FOUND — patient not found in Hospital A"
-// @Failure      502  {object}  response.ErrorResponse  "UPSTREAM_ERROR — timeout, connection error, or unexpected upstream status"
-// @Router       /hospital-a/patient/search/{id} [get]
+//
+//	@Summary		Search patient by ID via Hospital A
+//	@Description	Proxies a patient lookup to Hospital A upstream API using a Thai national ID or passport ID. No auth required. Fields absent from the upstream response are null.
+//	@Tags			hospital-a
+//	@Produce		json
+//	@Param			id	path		string	true	"Thai national ID or passport ID"
+//	@Success		200	{object}	response.HospitalAPatientResponse
+//	@Failure		400	{object}	response.ErrorResponse	"INVALID_REQUEST — id is empty"
+//	@Failure		404	{object}	response.ErrorResponse	"NOT_FOUND — patient not found in Hospital A"
+//	@Failure		502	{object}	response.ErrorResponse	"UPSTREAM_ERROR — timeout, connection error, or unexpected upstream status"
+//	@Router			/hospital-a/patient/search/{id} [get]
 func (h *HospitalAHandler) SearchPatient(c *gin.Context) {
 	id := c.Param("id")
 	if strings.TrimSpace(id) == "" {
