@@ -34,17 +34,18 @@ type LoginInput struct {
 }
 
 // Create godoc
-// @Summary      Create staff account
-// @Description  Registers a new staff member linked to a hospital
-// @Tags         staff
-// @Accept       json
-// @Produce      json
-// @Param        body  body      CreateStaffInput            true  "Staff registration data"
-// @Success      201   {object}  response.StaffCreatedResponse
-// @Failure      400   {object}  response.ErrorResponse
-// @Failure      404   {object}  response.ErrorResponse
-// @Failure      409   {object}  response.ErrorResponse
-// @Router       /staff/create [post]
+//
+//	@Summary		Create staff account
+//	@Description	Registers a new staff member linked to a hospital
+//	@Tags			staff
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		CreateStaffInput	true	"Staff registration data"
+//	@Success		201		{object}	response.StaffCreatedResponse
+//	@Failure		400		{object}	response.ErrorResponse
+//	@Failure		404		{object}	response.ErrorResponse
+//	@Failure		409		{object}	response.ErrorResponse
+//	@Router			/staff/create [post]
 func (h *StaffHandler) Create(c *gin.Context) {
 	var req CreateStaffInput
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -87,17 +88,18 @@ func (h *StaffHandler) Create(c *gin.Context) {
 }
 
 // Login godoc
-// @Summary      Staff login
-// @Description  Authenticates a staff member and returns JWT access + refresh tokens
-// @Tags         staff
-// @Accept       json
-// @Produce      json
-// @Param        body  body      LoginInput              true  "Login credentials"
-// @Success      200   {object}  response.TokenResponse
-// @Failure      400   {object}  response.ErrorResponse
-// @Failure      401   {object}  response.ErrorResponse
-// @Failure      403   {object}  response.ErrorResponse
-// @Router       /staff/login [post]
+//
+//	@Summary		Staff login
+//	@Description	Authenticates a staff member and returns JWT access + refresh tokens
+//	@Tags			staff
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		LoginInput	true	"Login credentials"
+//	@Success		200		{object}	response.TokenResponse
+//	@Failure		400		{object}	response.ErrorResponse
+//	@Failure		401		{object}	response.ErrorResponse
+//	@Failure		403		{object}	response.ErrorResponse
+//	@Router			/staff/login [post]
 func (h *StaffHandler) Login(c *gin.Context) {
 	var req LoginInput
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -127,4 +129,83 @@ func (h *StaffHandler) Login(c *gin.Context) {
 		RefreshToken: result.RefreshToken,
 		ExpiresIn:    result.ExpiresIn,
 	})
+}
+
+// RefreshInput is the request body for POST /staff/refresh.
+type RefreshInput struct {
+	RefreshToken string `json:"refresh_token" binding:"required" example:"a1b2c3d4..."`
+}
+
+// LogoutInput is the request body for POST /staff/logout.
+type LogoutInput struct {
+	RefreshToken string `json:"refresh_token" binding:"required" example:"a1b2c3d4..."`
+}
+
+// Refresh godoc
+//
+//	@Summary		Refresh access token
+//	@Description	Validates refresh token, rotates it, and returns a new access + refresh token pair
+//	@Tags			staff
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		RefreshInput	true	"Refresh token"
+//	@Success		200		{object}	response.TokenResponse
+//	@Failure		400		{object}	response.ErrorResponse
+//	@Failure		401		{object}	response.ErrorResponse
+//	@Router			/staff/refresh [post]
+func (h *StaffHandler) Refresh(c *gin.Context) {
+	var req RefreshInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.NewError("INVALID_INPUT", err.Error()))
+		return
+	}
+
+	result, err := h.svc.Refresh(c.Request.Context(), req.RefreshToken)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrTokenNotFound), errors.Is(err, service.ErrTokenExpired):
+			c.JSON(http.StatusUnauthorized, response.NewError("TOKEN_INVALID", "invalid or expired refresh token"))
+		default:
+			c.JSON(http.StatusInternalServerError, response.NewError("INTERNAL_ERROR", "internal server error"))
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, response.TokenResponse{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		ExpiresIn:    result.ExpiresIn,
+	})
+}
+
+// Logout godoc
+//
+//	@Summary		Staff logout
+//	@Description	Revokes the refresh token, ending the session
+//	@Tags			staff
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body	LogoutInput	true	"Refresh token to revoke"
+//	@Success		204		"No Content"
+//	@Failure		400		{object}	response.ErrorResponse
+//	@Failure		401		{object}	response.ErrorResponse
+//	@Router			/staff/logout [post]
+func (h *StaffHandler) Logout(c *gin.Context) {
+	var req LogoutInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.NewError("INVALID_INPUT", err.Error()))
+		return
+	}
+
+	if err := h.svc.Logout(c.Request.Context(), req.RefreshToken); err != nil {
+		switch {
+		case errors.Is(err, service.ErrTokenNotFound):
+			c.JSON(http.StatusUnauthorized, response.NewError("TOKEN_INVALID", "invalid or expired refresh token"))
+		default:
+			c.JSON(http.StatusInternalServerError, response.NewError("INTERNAL_ERROR", "internal server error"))
+		}
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

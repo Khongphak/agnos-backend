@@ -1,21 +1,21 @@
-// @title           Agnos Hospital Middleware API
-// @version         1.0
-// @description     Hospital staff authentication and patient management API
-// @host            localhost:8080
-// @BasePath        /api
-// @schemes         http
-// @securityDefinitions.apikey  BearerAuth
-// @in              header
-// @name            Authorization
-// @description     Type "Bearer" followed by a space and your JWT access token.
+// @title						Agnos Hospital Middleware API
+// @version					1.0
+// @description				Hospital staff authentication and patient management API
+// @host						localhost:8080
+// @BasePath					/api
+// @schemes					http
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description				Type "Bearer" followed by a space and your JWT access token.
 package main
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -65,6 +65,8 @@ func main() {
 	staffHandler := handler.NewStaffHandler(staffSvc)
 	r.POST("/staff/create", staffHandler.Create)
 	r.POST("/staff/login", staffHandler.Login)
+	r.POST("/staff/refresh", staffHandler.Refresh)
+	r.POST("/staff/logout", staffHandler.Logout)
 
 	// Patient search (auth required)
 	patientRepo := repository.NewPatientRepository(db)
