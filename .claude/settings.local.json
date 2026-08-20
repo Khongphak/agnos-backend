@@ -10,7 +10,22 @@
       "Bash(go test *)",
       "Bash(go build *)",
       "Bash(swag init *)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(ls railway.toml)",
+      "Bash(git show *)",
+      "Bash(flyctl logs *)",
+      "PowerShell(flyctl logs *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(& \"C:\\\\Users\\\\Admin\\\\.fly\\\\bin\\\\flyctl.exe\" logs --app agnos-backend-golden-horizon-931 2>&1 | Select-Object -Last 60)",
+      "PowerShell(& \"C:\\\\Users\\\\Admin\\\\.fly\\\\bin\\\\flyctl.exe\" status --app agnos-backend-golden-horizon-931)",
+      "PowerShell(& \"C:\\\\Users\\\\Admin\\\\.fly\\\\bin\\\\flyctl.exe\" logs --app agnos-backend-golden-horizon-931 --no-tail)",
+      "PowerShell(& \"C:\\\\Users\\\\Admin\\\\.fly\\\\bin\\\\flyctl.exe\" logs --app agnos-backend-golden-horizon-931 --no-tail 2>&1 | Select-Object -Last 30)",
+      "PowerShell(& \"C:\\\\Users\\\\Admin\\\\.fly\\\\bin\\\\flyctl.exe\" status --app agnos-db 2>&1)",
+      "PowerShell(& \"C:\\\\Users\\\\Admin\\\\.fly\\\\bin\\\\flyctl.exe\" logs --app agnos-db --no-tail 2>&1 | Select-Object -Last 40)",
+      "PowerShell(& \"C:\\\\Users\\\\Admin\\\\.fly\\\\bin\\\\flyctl.exe\" logs --app agnos-backend-golden-horizon-931 --no-tail 2>&1 | Select-Object -Last 20)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
