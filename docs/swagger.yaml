@@ -38,6 +38,22 @@ definitions:
     - password
     - username
     type: object
+  handler.LogoutInput:
+    properties:
+      refresh_token:
+        example: a1b2c3d4...
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handler.RefreshInput:
+    properties:
+      refresh_token:
+        example: a1b2c3d4...
+        type: string
+    required:
+    - refresh_token
+    type: object
   response.ErrorDetail:
     properties:
       code:
@@ -341,6 +357,65 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Staff login
+      tags:
+      - staff
+  /staff/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revokes the refresh token, ending the session
+      parameters:
+      - description: Refresh token to revoke
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LogoutInput'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Staff logout
+      tags:
+      - staff
+  /staff/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Validates refresh token, rotates it, and returns a new access +
+        refresh token pair
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RefreshInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh access token
       tags:
       - staff
 schemes:
