@@ -27,6 +27,8 @@ var (
 	ErrUsernameConflict   = errors.New("username already taken in this hospital")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrAccountInactive    = errors.New("account is inactive")
+	ErrTokenNotFound      = errors.New("refresh token not found or already revoked")
+	ErrTokenExpired       = errors.New("refresh token expired")
 )
 
 // StaffClaims is the JWT payload for staff access tokens.
@@ -67,6 +69,8 @@ type LoginResponse struct {
 type StaffService interface {
 	Create(ctx context.Context, req CreateStaffRequest) (*CreateStaffResponse, error)
 	Login(ctx context.Context, req LoginRequest) (*LoginResponse, error)
+	Refresh(ctx context.Context, rawToken string) (*LoginResponse, error)
+	Logout(ctx context.Context, rawToken string) error
 }
 
 type staffService struct {
@@ -182,4 +186,73 @@ func generateRefreshToken() (raw, hash string, err error) {
 	sum := sha256.Sum256(b)
 	hash = hex.EncodeToString(sum[:])
 	return raw, hash, nil
+}
+
+// hashRefreshToken re-derives the stored SHA-256 hash from a raw token string.
+// The raw token is hex-encoded bytes, so we decode → hash the original bytes.
+func hashRefreshToken(raw string) (string, error) {
+	b, err := hex.DecodeString(raw)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func (s *staffService) Refresh(ctx context.Context, rawToken string) (*LoginResponse, error) {
+	tokenHash, err := hashRefreshToken(rawToken)
+	if err != nil {
+		return nil, ErrTokenNotFound
+	}
+
+	rt, err := s.repo.FindRefreshToken(ctx, tokenHash)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrTokenNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if time.Now().After(rt.ExpiresAt) {
+		return nil, ErrTokenExpired
+	}
+
+	staff, err := s.repo.FindStaffByID(ctx, rt.StaffID)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, err := s.generateAccessToken(staff)
+	if err != nil {
+		return nil, err
+	}
+
+	newRaw, newHash, err := generateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.RotateRefreshToken(ctx, staff.ID, tokenHash, newHash, time.Now().Add(refreshTokenTTL)); err != nil {
+		return nil, err
+	}
+
+	return &LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: newRaw,
+		ExpiresIn:    int64(accessTokenTTL.Seconds()),
+	}, nil
+}
+
+func (s *staffService) Logout(ctx context.Context, rawToken string) error {
+	tokenHash, err := hashRefreshToken(rawToken)
+	if err != nil {
+		return ErrTokenNotFound
+	}
+
+	if err := s.repo.DeleteRefreshToken(ctx, tokenHash); errors.Is(err, repository.ErrNotFound) {
+		return ErrTokenNotFound
+	} else if err != nil {
+		return err
+	}
+	return nil
 }

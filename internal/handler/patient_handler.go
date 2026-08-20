@@ -22,22 +22,23 @@ func NewPatientHandler(svc service.PatientService) *PatientHandler {
 }
 
 // Search godoc
-// @Summary      Search patients
-// @Description  Returns patients registered at the authenticated staff's hospital. All query params are optional; omitting all returns every patient for that hospital.
-// @Tags         patient
-// @Produce      json
-// @Security     BearerAuth
-// @Param        national_id  query  string  false  "Thai national ID (exact match)"
-// @Param        passport_id  query  string  false  "Passport ID (exact match)"
-// @Param        first_name   query  string  false  "First name partial match (ILIKE)"
-// @Param        last_name    query  string  false  "Last name partial match (ILIKE)"
-// @Param        dob          query  string  false  "Date of birth exact match (YYYY-MM-DD)"
-// @Param        phone        query  string  false  "Phone number partial match (ILIKE)"
-// @Param        email        query  string  false  "Email partial match (ILIKE)"
-// @Success      200  {object}  response.PatientListResponse
-// @Failure      401  {object}  response.ErrorResponse
-// @Failure      500  {object}  response.ErrorResponse
-// @Router       /patient/search [get]
+//
+//	@Summary		Search patients
+//	@Description	Returns patients registered at the authenticated staff's hospital. All query params are optional; omitting all returns every patient for that hospital.
+//	@Tags			patient
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			national_id	query		string	false	"Thai national ID (exact match)"
+//	@Param			passport_id	query		string	false	"Passport ID (exact match)"
+//	@Param			first_name	query		string	false	"First name partial match (ILIKE)"
+//	@Param			last_name	query		string	false	"Last name partial match (ILIKE)"
+//	@Param			dob			query		string	false	"Date of birth exact match (YYYY-MM-DD)"
+//	@Param			phone		query		string	false	"Phone number partial match (ILIKE)"
+//	@Param			email		query		string	false	"Email partial match (ILIKE)"
+//	@Success		200			{object}	response.PatientListResponse
+//	@Failure		401			{object}	response.ErrorResponse
+//	@Failure		500			{object}	response.ErrorResponse
+//	@Router			/patient/search [get]
 func (h *PatientHandler) Search(c *gin.Context) {
 	claims := c.MustGet(middleware.StaffClaimsKey).(*service.StaffClaims)
 

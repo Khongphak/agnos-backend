@@ -17,10 +17,13 @@ import (
 )
 
 type mockStaffService struct {
-	createResult *service.CreateStaffResponse
-	createErr    error
-	loginResult  *service.LoginResponse
-	loginErr     error
+	createResult  *service.CreateStaffResponse
+	createErr     error
+	loginResult   *service.LoginResponse
+	loginErr      error
+	refreshResult *service.LoginResponse
+	refreshErr    error
+	logoutErr     error
 }
 
 func (m *mockStaffService) Create(_ context.Context, _ service.CreateStaffRequest) (*service.CreateStaffResponse, error) {
@@ -31,12 +34,22 @@ func (m *mockStaffService) Login(_ context.Context, _ service.LoginRequest) (*se
 	return m.loginResult, m.loginErr
 }
 
+func (m *mockStaffService) Refresh(_ context.Context, _ string) (*service.LoginResponse, error) {
+	return m.refreshResult, m.refreshErr
+}
+
+func (m *mockStaffService) Logout(_ context.Context, _ string) error {
+	return m.logoutErr
+}
+
 func newStaffRouter(svc service.StaffService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	h := handler.NewStaffHandler(svc)
 	r.POST("/staff/create", h.Create)
 	r.POST("/staff/login", h.Login)
+	r.POST("/staff/refresh", h.Refresh)
+	r.POST("/staff/logout", h.Logout)
 	return r
 }
 
@@ -244,6 +257,125 @@ func TestStaffHandler_Login_InternalError(t *testing.T) {
 	svc := &mockStaffService{loginErr: errors.New("unexpected")}
 	w := postJSON(newStaffRouter(svc), "/staff/login", map[string]string{
 		"username": "bob", "password": "pass", "hospital_code": "H1",
+	})
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", w.Code)
+	}
+}
+
+// ── POST /staff/refresh ──────────────────────────────────────────────────────
+
+func TestStaffHandler_Refresh_Success(t *testing.T) {
+	svc := &mockStaffService{
+		refreshResult: &service.LoginResponse{
+			AccessToken:  "new.access.token",
+			RefreshToken: "new-refresh-token",
+			ExpiresIn:    900,
+		},
+	}
+	w := postJSON(newStaffRouter(svc), "/staff/refresh", map[string]string{
+		"refresh_token": "somerawtoken",
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body)
+	}
+	var body map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &body)
+	if body["access_token"] != "new.access.token" {
+		t.Errorf("unexpected access_token: %v", body["access_token"])
+	}
+	if body["refresh_token"] != "new-refresh-token" {
+		t.Errorf("unexpected refresh_token: %v", body["refresh_token"])
+	}
+}
+
+func TestStaffHandler_Refresh_TokenNotFound(t *testing.T) {
+	svc := &mockStaffService{refreshErr: service.ErrTokenNotFound}
+	w := postJSON(newStaffRouter(svc), "/staff/refresh", map[string]string{
+		"refresh_token": "somerawtoken",
+	})
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+	var resp response.ErrorResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.Error.Code != "TOKEN_INVALID" {
+		t.Errorf("expected TOKEN_INVALID, got %q", resp.Error.Code)
+	}
+}
+
+func TestStaffHandler_Refresh_TokenExpired(t *testing.T) {
+	svc := &mockStaffService{refreshErr: service.ErrTokenExpired}
+	w := postJSON(newStaffRouter(svc), "/staff/refresh", map[string]string{
+		"refresh_token": "somerawtoken",
+	})
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+	var resp response.ErrorResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.Error.Code != "TOKEN_INVALID" {
+		t.Errorf("expected TOKEN_INVALID, got %q", resp.Error.Code)
+	}
+}
+
+func TestStaffHandler_Refresh_MissingField(t *testing.T) {
+	svc := &mockStaffService{}
+	w := postJSON(newStaffRouter(svc), "/staff/refresh", map[string]string{})
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestStaffHandler_Refresh_InternalError(t *testing.T) {
+	svc := &mockStaffService{refreshErr: errors.New("db down")}
+	w := postJSON(newStaffRouter(svc), "/staff/refresh", map[string]string{
+		"refresh_token": "somerawtoken",
+	})
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", w.Code)
+	}
+}
+
+// ── POST /staff/logout ───────────────────────────────────────────────────────
+
+func TestStaffHandler_Logout_Success(t *testing.T) {
+	svc := &mockStaffService{}
+	w := postJSON(newStaffRouter(svc), "/staff/logout", map[string]string{
+		"refresh_token": "somerawtoken",
+	})
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d: %s", w.Code, w.Body)
+	}
+}
+
+func TestStaffHandler_Logout_TokenNotFound(t *testing.T) {
+	svc := &mockStaffService{logoutErr: service.ErrTokenNotFound}
+	w := postJSON(newStaffRouter(svc), "/staff/logout", map[string]string{
+		"refresh_token": "somerawtoken",
+	})
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+	var resp response.ErrorResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.Error.Code != "TOKEN_INVALID" {
+		t.Errorf("expected TOKEN_INVALID, got %q", resp.Error.Code)
+	}
+}
+
+func TestStaffHandler_Logout_MissingField(t *testing.T) {
+	svc := &mockStaffService{}
+	w := postJSON(newStaffRouter(svc), "/staff/logout", map[string]string{})
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestStaffHandler_Logout_InternalError(t *testing.T) {
+	svc := &mockStaffService{logoutErr: errors.New("db down")}
+	w := postJSON(newStaffRouter(svc), "/staff/logout", map[string]string{
+		"refresh_token": "somerawtoken",
 	})
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d", w.Code)

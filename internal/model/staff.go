@@ -19,3 +19,11 @@ type Staff struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
+
+type StaffRefreshToken struct {
+	ID        int64
+	StaffID   int64
+	TokenHash string
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}

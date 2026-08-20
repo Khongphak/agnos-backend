@@ -21,6 +21,10 @@ type StaffRepository interface {
 	CreateStaff(ctx context.Context, hospitalID int64, username, passwordHash, role string) (*model.Staff, error)
 	FindStaffByUsernameAndHospital(ctx context.Context, username string, hospitalID int64) (*model.Staff, error)
 	SaveRefreshTokenAndUpdateLoginTime(ctx context.Context, staffID int64, tokenHash string, expiresAt time.Time) error
+	FindStaffByID(ctx context.Context, staffID int64) (*model.Staff, error)
+	FindRefreshToken(ctx context.Context, tokenHash string) (*model.StaffRefreshToken, error)
+	DeleteRefreshToken(ctx context.Context, tokenHash string) error
+	RotateRefreshToken(ctx context.Context, staffID int64, oldHash, newHash string, newExpiresAt time.Time) error
 }
 
 type staffRepository struct {
@@ -102,6 +106,75 @@ func (r *staffRepository) SaveRefreshTokenAndUpdateLoginTime(ctx context.Context
 	if _, err = tx.ExecContext(ctx,
 		`UPDATE staff SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1`,
 		staffID,
+	); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *staffRepository) FindStaffByID(ctx context.Context, staffID int64) (*model.Staff, error) {
+	var s model.Staff
+	err := r.db.QueryRowContext(ctx,
+		`SELECT id, hospital_id, username, role, is_active FROM staff WHERE id = $1`,
+		staffID,
+	).Scan(&s.ID, &s.HospitalID, &s.Username, &s.Role, &s.IsActive)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (r *staffRepository) FindRefreshToken(ctx context.Context, tokenHash string) (*model.StaffRefreshToken, error) {
+	var t model.StaffRefreshToken
+	err := r.db.QueryRowContext(ctx,
+		`SELECT id, staff_id, token_hash, expires_at, created_at
+		 FROM staff_refresh_tokens WHERE token_hash = $1`,
+		tokenHash,
+	).Scan(&t.ID, &t.StaffID, &t.TokenHash, &t.ExpiresAt, &t.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (r *staffRepository) DeleteRefreshToken(ctx context.Context, tokenHash string) error {
+	res, err := r.db.ExecContext(ctx,
+		`DELETE FROM staff_refresh_tokens WHERE token_hash = $1`, tokenHash)
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *staffRepository) RotateRefreshToken(ctx context.Context, staffID int64, oldHash, newHash string, newExpiresAt time.Time) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	res, err := tx.ExecContext(ctx,
+		`DELETE FROM staff_refresh_tokens WHERE token_hash = $1`, oldHash)
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return ErrNotFound
+	}
+
+	if _, err = tx.ExecContext(ctx,
+		`INSERT INTO staff_refresh_tokens (staff_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+		staffID, newHash, newExpiresAt,
 	); err != nil {
 		return err
 	}

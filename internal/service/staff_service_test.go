@@ -21,13 +21,22 @@ type mockStaffRepo struct {
 	hospital        *model.Hospital
 	findHospitalErr error
 
-	createdStaff  *model.Staff
+	createdStaff   *model.Staff
 	createStaffErr error
 
-	foundStaff    *model.Staff
-	findStaffErr  error
+	foundStaff   *model.Staff
+	findStaffErr error
 
 	saveTokenErr error
+
+	foundStaffByID   *model.Staff
+	findStaffByIDErr error
+
+	foundToken   *model.StaffRefreshToken
+	findTokenErr error
+
+	deleteTokenErr error
+	rotateTokenErr error
 }
 
 func (m *mockStaffRepo) FindHospitalByCode(_ context.Context, _ string) (*model.Hospital, error) {
@@ -44,6 +53,22 @@ func (m *mockStaffRepo) FindStaffByUsernameAndHospital(_ context.Context, _ stri
 
 func (m *mockStaffRepo) SaveRefreshTokenAndUpdateLoginTime(_ context.Context, _ int64, _ string, _ time.Time) error {
 	return m.saveTokenErr
+}
+
+func (m *mockStaffRepo) FindStaffByID(_ context.Context, _ int64) (*model.Staff, error) {
+	return m.foundStaffByID, m.findStaffByIDErr
+}
+
+func (m *mockStaffRepo) FindRefreshToken(_ context.Context, _ string) (*model.StaffRefreshToken, error) {
+	return m.foundToken, m.findTokenErr
+}
+
+func (m *mockStaffRepo) DeleteRefreshToken(_ context.Context, _ string) error {
+	return m.deleteTokenErr
+}
+
+func (m *mockStaffRepo) RotateRefreshToken(_ context.Context, _ int64, _, _ string, _ time.Time) error {
+	return m.rotateTokenErr
 }
 
 func newTestStaffService(repo repository.StaffRepository) service.StaffService {
@@ -272,5 +297,101 @@ func TestStaffService_Login_SaveTokenError(t *testing.T) {
 	})
 	if !errors.Is(err, dbErr) {
 		t.Errorf("expected db error, got %v", err)
+	}
+}
+
+// testRawToken is a valid 64-char hex string (32 bytes) usable as a refresh token in tests.
+const testRawToken = "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+
+// ── Refresh ──────────────────────────────────────────────────────────────────
+
+func TestStaffService_Refresh_Success(t *testing.T) {
+	repo := &mockStaffRepo{
+		foundToken: &model.StaffRefreshToken{
+			ID:        1,
+			StaffID:   7,
+			ExpiresAt: time.Now().Add(time.Hour),
+		},
+		foundStaffByID: activeStaff(),
+	}
+	svc := newTestStaffService(repo)
+
+	resp, err := svc.Refresh(context.Background(), testRawToken)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.AccessToken == "" {
+		t.Error("access_token must not be empty")
+	}
+	if resp.RefreshToken == "" {
+		t.Error("refresh_token must not be empty")
+	}
+	if resp.ExpiresIn != 900 {
+		t.Errorf("expected expires_in 900, got %d", resp.ExpiresIn)
+	}
+}
+
+func TestStaffService_Refresh_TokenNotFound(t *testing.T) {
+	repo := &mockStaffRepo{findTokenErr: repository.ErrNotFound}
+	svc := newTestStaffService(repo)
+
+	_, err := svc.Refresh(context.Background(), testRawToken)
+	if !errors.Is(err, service.ErrTokenNotFound) {
+		t.Errorf("expected ErrTokenNotFound, got %v", err)
+	}
+}
+
+func TestStaffService_Refresh_TokenExpired(t *testing.T) {
+	repo := &mockStaffRepo{
+		foundToken: &model.StaffRefreshToken{
+			ID:        1,
+			StaffID:   7,
+			ExpiresAt: time.Now().Add(-time.Hour),
+		},
+	}
+	svc := newTestStaffService(repo)
+
+	_, err := svc.Refresh(context.Background(), testRawToken)
+	if !errors.Is(err, service.ErrTokenExpired) {
+		t.Errorf("expected ErrTokenExpired, got %v", err)
+	}
+}
+
+func TestStaffService_Refresh_InvalidRawToken(t *testing.T) {
+	svc := newTestStaffService(&mockStaffRepo{})
+
+	_, err := svc.Refresh(context.Background(), "not-valid-hex!!")
+	if !errors.Is(err, service.ErrTokenNotFound) {
+		t.Errorf("expected ErrTokenNotFound, got %v", err)
+	}
+}
+
+// ── Logout ───────────────────────────────────────────────────────────────────
+
+func TestStaffService_Logout_Success(t *testing.T) {
+	repo := &mockStaffRepo{deleteTokenErr: nil}
+	svc := newTestStaffService(repo)
+
+	if err := svc.Logout(context.Background(), testRawToken); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+}
+
+func TestStaffService_Logout_TokenNotFound(t *testing.T) {
+	repo := &mockStaffRepo{deleteTokenErr: repository.ErrNotFound}
+	svc := newTestStaffService(repo)
+
+	err := svc.Logout(context.Background(), testRawToken)
+	if !errors.Is(err, service.ErrTokenNotFound) {
+		t.Errorf("expected ErrTokenNotFound, got %v", err)
+	}
+}
+
+func TestStaffService_Logout_InvalidRawToken(t *testing.T) {
+	svc := newTestStaffService(&mockStaffRepo{})
+
+	err := svc.Logout(context.Background(), "not-valid-hex!!")
+	if !errors.Is(err, service.ErrTokenNotFound) {
+		t.Errorf("expected ErrTokenNotFound, got %v", err)
 	}
 }
