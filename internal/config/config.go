@@ -59,7 +59,7 @@ func (d DatabaseConfig) PostgresURL() string {
 func Load() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port:           getEnv("SERVER_PORT", "8080"),
+			Port:           getEnvAny("SERVER_PORT", "PORT", "8080"),
 			AllowedOrigins: strings.Split(getEnv("ALLOWED_ORIGINS", "http://localhost:3000"), ","),
 		},
 		Database: DatabaseConfig{
@@ -82,6 +82,16 @@ func Load() *Config {
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return fallback
+}
+
+func getEnvAny(keys ...string) string {
+	fallback := keys[len(keys)-1]
+	for _, k := range keys[:len(keys)-1] {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
 	}
 	return fallback
 }
